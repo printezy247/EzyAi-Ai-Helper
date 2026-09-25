@@ -48,6 +48,27 @@ skillsCmd
   });
 
 skillsCmd
+  .command('repo <githubUrl> [names...]')
+  .description('preview skills in a GitHub repo; install the named ones (or --all) into the hub')
+  .option('--all', 'install every skill the repo offers', false)
+  .option('--sync <targetIds>', 'after installing, sync to these targets (comma-separated)')
+  .action(async (url, names, o) => {
+    const gi = require('../core/marketplace/gitInstall');
+    const offered = await gi.preview(url);
+    if (!names.length && !o.all) {
+      console.log(JSON.stringify(offered, null, 2));
+      console.error('\nPreview only. Re-run with skill names, or --all, to install. Read the files first: skills are instructions your AI tools will follow.');
+      return;
+    }
+    const chosen = o.all ? offered.map((s) => s.name) : names;
+    const result = await gi.install(url, chosen, skills);
+    for (const name of result.installed) {
+      for (const t of (o.sync || '').split(',').filter(Boolean)) skills.syncSkill(name, t);
+    }
+    console.log(JSON.stringify(result, null, 2));
+  });
+
+skillsCmd
   .command('sync <name> <targetId>')
   .description('symlink a skill into a target tool')
   .action((name, targetId) => {
