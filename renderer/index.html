@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>EzyAi Helper</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>EzyAi Helper</h1>
+    <nav>
+      <button class="tab-btn active" data-tab="skills">Skills Hub</button>
+      <button class="tab-btn" data-tab="ssh">SSH Ops</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="tab-skills" class="tab active">
+      <div class="panel">
+        <h2>Skills</h2>
+        <ul id="skills-list"></ul>
+        <form id="skill-form">
+          <input id="skill-name" placeholder="skill-name" required />
+          <textarea id="skill-content" rows="4" placeholder="---\nname: skill-name\ndescription: ...\n---\n\nInstructions..."></textarea>
+          <button type="submit">Add skill</button>
+        </form>
+      </div>
+      <div class="panel">
+        <h2>Sync targets</h2>
+        <ul id="targets-list"></ul>
+        <p class="hint">Select a skill above, then toggle which AI assistants should see it.</p>
+      </div>
+    </section>
+
+    <section id="tab-ssh" class="tab">
+      <div class="panel">
+        <h2>Run a remote command</h2>
+        <form id="ssh-form">
+          <input id="ssh-host" placeholder="host alias or user@host" required />
+          <input id="ssh-command" placeholder="command to run" required />
+          <label><input type="checkbox" id="ssh-confirm" /> confirm destructive command</label>
+          <button type="submit">Run</button>
+        </form>
+        <pre id="ssh-output"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

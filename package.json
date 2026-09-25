@@ -1,0 +1,21 @@
+{
+  "name": "ezyai-helper",
+  "version": "0.1.0",
+  "description": "Developing the best sidekick linux app for your coding agent.",
+  "main": "electron/main.js",
+  "private": true,
+  "bin": {
+    "ezyai": "./bin/ezyai.js"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test core/**/*.test.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0"
+  }
+}
