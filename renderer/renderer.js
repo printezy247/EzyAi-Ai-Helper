@@ -11,18 +11,35 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
   });
 });
 
+function showStatus(msg, isError) {
+  const el = document.getElementById('skills-status');
+  el.textContent = msg || '';
+  el.style.color = isError ? '#ff7b7b' : '#7bd88f';
+}
+
+function errText(err) {
+  // Electron wraps IPC errors as "Error invoking remote method '...': Error: <message>"
+  return String(err && err.message ? err.message : err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
+
 async function refreshSkills() {
   const [skills, targets] = await Promise.all([window.ezyai.skills.list(), window.ezyai.skills.targets()]);
+  if (selectedSkill && !skills.some((s) => s.name === selectedSkill)) selectedSkill = null;
 
   const skillsList = document.getElementById('skills-list');
   skillsList.innerHTML = '';
+  if (skills.length === 0) {
+    skillsList.innerHTML = '<li class="hint">No skills yet — add one below.</li>';
+  }
   skills.forEach((skill) => {
     const li = document.createElement('li');
     li.textContent = `${skill.name} — synced: ${skill.syncedTo.join(', ') || 'none'}`;
     li.style.cursor = 'pointer';
+    if (skill.name === selectedSkill) li.style.background = '#232a36';
     li.addEventListener('click', () => {
       selectedSkill = skill.name;
-      renderTargets(targets, skill);
+      showStatus('');
+      refreshSkills();
     });
     skillsList.appendChild(li);
   });
@@ -43,12 +60,21 @@ function renderTargets(targets, activeSkill) {
     toggle.disabled = !activeSkill;
     toggle.addEventListener('click', async () => {
       if (!activeSkill) return;
-      if (synced) {
-        await window.ezyai.skills.unsync(activeSkill.name, target.id);
-      } else {
-        await window.ezyai.skills.sync(activeSkill.name, target.id);
+      try {
+        if (synced) {
+          await window.ezyai.skills.unsync(activeSkill.name, target.id);
+          showStatus(`Unsynced ${activeSkill.name} from ${target.label}`);
+        } else {
+          const r = await window.ezyai.skills.sync(activeSkill.name, target.id);
+          showStatus(`Synced ${activeSkill.name} -> ${r.linkPath}`);
+        }
+      } catch (err) {
+        showStatus(errText(err), true);
       }
-      refreshSkills();
+      const keep = document.getElementById('skills-status').textContent;
+      const color = document.getElementById('skills-status').style.color;
+      await refreshSkills();
+      showStatus(keep, color === 'rgb(255, 123, 123)');
     });
     li.appendChild(label);
     li.appendChild(toggle);
@@ -60,9 +86,15 @@ document.getElementById('skill-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = document.getElementById('skill-name').value.trim();
   const content = document.getElementById('skill-content').value;
-  await window.ezyai.skills.create(name, content);
-  e.target.reset();
-  refreshSkills();
+  try {
+    await window.ezyai.skills.create(name, content);
+    selectedSkill = name; // select it so the sync buttons are live
+    e.target.reset();
+    await refreshSkills();
+    showStatus(`Added ${name} — now click a sync button on the right`);
+  } catch (err) {
+    showStatus(errText(err), true);
+  }
 });
 
 document.getElementById('ssh-form').addEventListener('submit', async (e) => {
