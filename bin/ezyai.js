@@ -145,6 +145,28 @@ program
     console.log(JSON.stringify({ applied: idx }));
   });
 
+const docxCmd = program.command('docx').description('Word documents with tracked changes');
+docxCmd.command('read <file>')
+  .action(async (file) => {
+    const paras = await require('../core/office/docx').readDocx(require('fs').readFileSync(file));
+    console.log(JSON.stringify(paras, null, 2));
+  });
+docxCmd.command('edit <file> <newParagraphsJson>')
+  .description('newParagraphsJson: JSON array of the full paragraph list after edits')
+  .option('--accept <indexes>', 'comma-separated paragraph indexes, or "all"; omit to just list changes')
+  .option('--out <file>', 'output path (default: overwrite input)')
+  .option('--author <name>', 'tracked-change author', 'EzyAi')
+  .action(async (file, jsonFile, o) => {
+    const fs = require('fs');
+    const d = require('../core/office/docx');
+    const buf = fs.readFileSync(file);
+    const changes = await d.proposeDocxEdit(buf, JSON.parse(fs.readFileSync(jsonFile, 'utf8')));
+    if (!o.accept) return console.log(JSON.stringify(changes, null, 2));
+    const idx = o.accept === 'all' ? changes.map((c) => c.index) : o.accept.split(',').map(Number);
+    fs.writeFileSync(o.out || file, await d.applyDocxEdit(buf, changes, idx, { author: o.author }));
+    console.log(JSON.stringify({ applied: idx }));
+  });
+
 const marketCmd = program.command('market').description('skill marketplace');
 marketCmd.command('list <registryUrl>')
   .action(async (url) => console.log(JSON.stringify(await require('../core/marketplace/registry').fetchRegistry(url), null, 2)));

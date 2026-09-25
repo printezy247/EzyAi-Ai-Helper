@@ -13,9 +13,10 @@
   },
   "license": "MIT",
   "dependencies": {
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "jszip": "^3.10.2"
   },
   "devDependencies": {
-    "electron": "^32.0.0"
+    "electron": "^44.4.5"
   }
 }

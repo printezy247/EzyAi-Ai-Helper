@@ -8,7 +8,7 @@ inspired by. Phase 1 is built; the rest are scoped but not started.
 | Phase | Shipped | Still missing |
 |---|---|---|
 | 1 Skills + SSH | complete | — |
-| 2 Office | `core/office`: reviewable hunk-level edits for Markdown/HTML/text, refuses stale patches | docx/xlsx/pptx/PDF engines, tracked-change output |
+| 2 Office | `core/office`: hunk-level edits for Markdown/HTML/text; `.docx` paragraph edits written as real Word tracked changes (needs `jszip`) | xlsx/pptx/PDF engines, docx paragraph add/remove, tables, formatting-aware edits |
 | 3 Orchestrator | `core/agents`: Commander, 5 specialists, validated parallel plans, Goals tab | agent marketplace, external CLI agents, local KB/embeddings |
 | 4 Research | `core/research`: run history, search, archive, sha256 provenance, markdown export | notebooks, literature/PDF pipeline, split-pane UI |
 | 5 Goal agent | `core/goals`: folder-bound file writes with one-step undo | background/scheduled runs, voice |
