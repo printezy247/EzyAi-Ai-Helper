@@ -24,6 +24,8 @@ ipcMain.handle('skills:list', () => skills.listSkills());
 ipcMain.handle('skills:targets', () => skills.knownTargets());
 ipcMain.handle('skills:create', (_e, name, content) => skills.createSkill(name, content));
 ipcMain.handle('skills:delete', (_e, name) => skills.deleteSkill(name));
+ipcMain.handle('skills:unmanaged', () => skills.listUnmanaged());
+ipcMain.handle('skills:import', (_e, name, targetId) => skills.importSkill(name, targetId));
 ipcMain.handle('skills:sync', (_e, name, targetId) => skills.syncSkill(name, targetId));
 ipcMain.handle('skills:unsync', (_e, name, targetId) => skills.unsyncSkill(name, targetId));
 

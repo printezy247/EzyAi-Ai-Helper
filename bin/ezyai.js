@@ -34,6 +34,20 @@ skillsCmd
   });
 
 skillsCmd
+  .command('unmanaged')
+  .description('list existing skill folders in your tools that the hub does not manage')
+  .action(() => {
+    console.log(JSON.stringify(skills.listUnmanaged(), null, 2));
+  });
+
+skillsCmd
+  .command('import <name> <targetId>')
+  .description('move an existing skill folder into the hub and leave a symlink')
+  .action((name, targetId) => {
+    console.log(JSON.stringify(skills.importSkill(name, targetId), null, 2));
+  });
+
+skillsCmd
   .command('sync <name> <targetId>')
   .description('symlink a skill into a target tool')
   .action((name, targetId) => {

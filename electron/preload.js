@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('ezyai', {
     targets: () => ipcRenderer.invoke('skills:targets'),
     create: (name, content) => ipcRenderer.invoke('skills:create', name, content),
     delete: (name) => ipcRenderer.invoke('skills:delete', name),
+    unmanaged: () => ipcRenderer.invoke('skills:unmanaged'),
+    import: (name, targetId) => ipcRenderer.invoke('skills:import', name, targetId),
     sync: (name, targetId) => ipcRenderer.invoke('skills:sync', name, targetId),
     unsync: (name, targetId) => ipcRenderer.invoke('skills:unsync', name, targetId),
   },

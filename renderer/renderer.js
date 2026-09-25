@@ -45,6 +45,41 @@ async function refreshSkills() {
   });
 
   renderTargets(targets, skills.find((s) => s.name === selectedSkill));
+  renderUnmanaged(await window.ezyai.skills.unmanaged());
+}
+
+function renderUnmanaged(items) {
+  const list = document.getElementById('unmanaged-list');
+  list.innerHTML = '';
+  if (items.length === 0) {
+    list.innerHTML = '<li class="hint">None — every skill in your tools is already managed.</li>';
+    return;
+  }
+  items.forEach((item) => {
+    const li = document.createElement('li');
+    const label = document.createElement('span');
+    label.textContent = `${item.name} (${item.targetLabel})${item.conflict ? ' — name already in hub' : ''}`;
+    const btn = document.createElement('button');
+    btn.textContent = 'import';
+    btn.disabled = item.conflict;
+    btn.addEventListener('click', async () => {
+      const ok = confirm(
+        `Move ${item.dir}\ninto the hub (~/.ezyai/skills) and leave a symlink in its place?`
+      );
+      if (!ok) return;
+      try {
+        await window.ezyai.skills.import(item.name, item.targetId);
+        selectedSkill = item.name;
+        await refreshSkills();
+        showStatus(`Imported ${item.name}`);
+      } catch (err) {
+        showStatus(errText(err), true);
+      }
+    });
+    li.appendChild(label);
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
 }
 
 function renderTargets(targets, activeSkill) {

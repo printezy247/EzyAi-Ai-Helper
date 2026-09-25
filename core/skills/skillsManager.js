@@ -145,7 +145,79 @@ function unsyncSkill(name, targetId) {
   return { name, targetId };
 }
 
+/**
+ * Skills that already live in a target tool as real folders (not symlinks,
+ * not managed by the hub) and could be imported.
+ */
+function listUnmanaged() {
+  ensureStoreRoot();
+  const found = [];
+  for (const target of knownTargets()) {
+    let entries;
+    try {
+      entries = fs.readdirSync(target.dir, { withFileTypes: true });
+    } catch {
+      continue; // target dir doesn't exist
+    }
+    for (const e of entries) {
+      if (!e.isDirectory() || !validName(e.name)) continue; // isDirectory() is false for symlinks
+      if (!fs.existsSync(path.join(target.dir, e.name, 'SKILL.md'))) continue;
+      found.push({
+        name: e.name,
+        targetId: target.id,
+        targetLabel: target.label,
+        dir: path.join(target.dir, e.name),
+        conflict: fs.existsSync(path.join(STORE_ROOT, e.name)),
+      });
+    }
+  }
+  return found;
+}
+
+/**
+ * Adopt an existing skill folder: move it into the central store and leave a
+ * symlink in its place, so the original tool keeps seeing it. Refuses to
+ * overwrite anything already in the store.
+ */
+function importSkill(name, targetId) {
+  if (!validName(name)) throw new Error(`invalid skill name "${name}"`);
+  const target = targetById(targetId);
+  const src = path.join(target.dir, name);
+  const dest = path.join(STORE_ROOT, name);
+
+  let stat;
+  try {
+    stat = fs.lstatSync(src);
+  } catch {
+    throw new Error(`no skill "${name}" found in ${target.dir}`);
+  }
+  if (stat.isSymbolicLink()) throw new Error(`"${name}" in ${target.label} is already a symlink; nothing to import`);
+  if (!stat.isDirectory() || !fs.existsSync(path.join(src, 'SKILL.md'))) {
+    throw new Error(`"${src}" is not a skill folder (no SKILL.md)`);
+  }
+  if (fs.existsSync(dest)) {
+    throw new Error(`the hub already has a skill named "${name}"; rename one of them first`);
+  }
+
+  ensureStoreRoot();
+  try {
+    fs.renameSync(src, dest);
+  } catch (err) {
+    if (err.code !== 'EXDEV') throw err;
+    fs.cpSync(src, dest, { recursive: true }); // different filesystem: copy, then remove
+    fs.rmSync(src, { recursive: true });
+  }
+  fs.symlinkSync(dest, src, 'dir');
+
+  const state = readState();
+  state[name] = Array.from(new Set([...(state[name] || []), targetId]));
+  writeState(state);
+  return { name, targetId, store: dest, link: src };
+}
+
 module.exports = {
+  listUnmanaged,
+  importSkill,
   STORE_ROOT,
   STATE_FILE,
   listSkills,

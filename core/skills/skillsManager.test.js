@@ -36,6 +36,38 @@ test('create, list, sync, unsync, delete a skill', () => {
   assert.equal(skills.listSkills().length, 0);
 });
 
+test('import adopts an existing skill folder and leaves a symlink', () => {
+  const target = skills.knownTargets()[0];
+  const dir = path.join(target.dir, 'legacy-skill');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'SKILL.md'), '---\nname: legacy-skill\ndescription: old\n---\n');
+  fs.writeFileSync(path.join(dir, 'extra.txt'), 'keep me');
+
+  const found = skills.listUnmanaged().filter((s) => s.name === 'legacy-skill');
+  assert.equal(found.length, 1);
+  assert.equal(found[0].conflict, false);
+
+  skills.importSkill('legacy-skill', target.id);
+  assert.ok(fs.lstatSync(dir).isSymbolicLink());
+  assert.equal(fs.readFileSync(path.join(dir, 'extra.txt'), 'utf8'), 'keep me'); // still reachable via the link
+  assert.ok(fs.existsSync(path.join(skills.STORE_ROOT, 'legacy-skill', 'extra.txt')));
+  const listed = skills.listSkills().find((s) => s.name === 'legacy-skill');
+  assert.deepEqual(listed.syncedTo, [target.id]);
+  assert.equal(skills.listUnmanaged().some((s) => s.name === 'legacy-skill'), false);
+  assert.throws(() => skills.importSkill('legacy-skill', target.id), /already a symlink/);
+});
+
+test('import refuses to overwrite a skill already in the hub', () => {
+  const target = skills.knownTargets()[1];
+  skills.createSkill('dup-skill', '---\nname: dup-skill\ndescription: hub\n---\n');
+  const dir = path.join(target.dir, 'dup-skill');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'SKILL.md'), 'other');
+  assert.equal(skills.listUnmanaged().find((s) => s.name === 'dup-skill').conflict, true);
+  assert.throws(() => skills.importSkill('dup-skill', target.id), /already has a skill/);
+  assert.ok(fs.lstatSync(dir).isDirectory() && !fs.lstatSync(dir).isSymbolicLink()); // untouched
+});
+
 test('rejects invalid skill names', () => {
   assert.throws(() => skills.createSkill('Not Valid!', 'x'));
 });
