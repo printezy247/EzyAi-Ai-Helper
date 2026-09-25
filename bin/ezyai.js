@@ -81,4 +81,27 @@ sshCmd
     if (result.status !== 'ok') process.exitCode = 1;
   });
 
+program
+  .command('goal <goal...>')
+  .description('have the Commander plan a goal and dispatch specialist agents')
+  .requiredOption('--model <model>', 'model name')
+  .option('--kind <kind>', 'openai (default; also Ollama/llama-server) or anthropic', 'openai')
+  .option('--base-url <url>', 'provider base URL, e.g. http://127.0.0.1:11434')
+  .option('--key-env <name>', 'environment variable holding the API key')
+  .action(async (goalParts, options) => {
+    const { createProvider } = require('../core/agents/providers');
+    const { runGoal } = require('../core/agents/commander');
+    const provider = createProvider({
+      kind: options.kind,
+      baseUrl: options.baseUrl,
+      model: options.model,
+      apiKeyEnv: options.keyEnv,
+    });
+    const out = await runGoal(goalParts.join(' '), {
+      provider,
+      onEvent: (e) => console.error(JSON.stringify(e)),
+    });
+    console.log(JSON.stringify(out, null, 2));
+  });
+
 program.parseAsync(process.argv);
