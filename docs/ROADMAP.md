@@ -3,6 +3,20 @@
 Six phases, each drawing from one of the source projects this app is
 inspired by. Phase 1 is built; the rest are scoped but not started.
 
+## Status
+
+| Phase | Shipped | Still missing |
+|---|---|---|
+| 1 Skills + SSH | complete | — |
+| 2 Office | `core/office`: reviewable hunk-level edits for Markdown/HTML/text, refuses stale patches | docx/xlsx/pptx/PDF engines, tracked-change output |
+| 3 Orchestrator | `core/agents`: Commander, 5 specialists, validated parallel plans, Goals tab | agent marketplace, external CLI agents, local KB/embeddings |
+| 4 Research | `core/research`: run history, search, archive, sha256 provenance, markdown export | notebooks, literature/PDF pipeline, split-pane UI |
+| 5 Goal agent | `core/goals`: folder-bound file writes with one-step undo | background/scheduled runs, voice |
+| 6 Marketplace | `core/marketplace`: https registry, sha256-verified skill install | UI, agent packages, signing |
+
+Everything above is unit-tested with `node --test` except the Electron UI and
+live-model calls, which need a real display and model endpoint.
+
 ## Phase 1 — Skills Hub + SSH Ops (done)
 
 - Central skill store + symlink sync into Claude Code / Codex / Cursor /

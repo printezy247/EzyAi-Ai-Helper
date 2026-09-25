@@ -11,6 +11,7 @@
     <h1>EzyAi Helper</h1>
     <nav>
       <button class="tab-btn active" data-tab="skills">Skills Hub</button>
+      <button class="tab-btn" data-tab="goals">Goals</button>
       <button class="tab-btn" data-tab="ssh">SSH Ops</button>
     </nav>
   </header>
@@ -33,6 +34,27 @@
       </div>
     </section>
 
+    <section id="tab-goals" class="tab">
+      <div class="panel">
+        <h2>Run a goal</h2>
+        <form id="goal-form">
+          <input id="goal-text" placeholder="e.g. research X and write a summary" required />
+          <input id="goal-model" placeholder="model, e.g. llama3.1" required />
+          <input id="goal-base" placeholder="base URL, e.g. http://127.0.0.1:11434" />
+          <input id="goal-keyenv" placeholder="API key env var name (optional)" />
+          <input id="goal-bind" placeholder="bound folder for file writes (optional)" />
+          <button type="submit">Run</button>
+          <button type="button" id="goal-undo" disabled>Undo file writes</button>
+        </form>
+        <pre id="goal-output"></pre>
+      </div>
+      <div class="panel">
+        <h2>History</h2>
+        <input id="runs-query" placeholder="search runs" />
+        <ul id="runs-list"></ul>
+      </div>
+    </section>
+
     <section id="tab-ssh" class="tab">
       <div class="panel">
         <h2>Run a remote command</h2>
@@ -47,6 +69,7 @@
     </section>
   </main>
 
+  <script src="goals.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

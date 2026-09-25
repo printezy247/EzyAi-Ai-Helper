@@ -88,9 +88,12 @@ program
   .option('--kind <kind>', 'openai (default; also Ollama/llama-server) or anthropic', 'openai')
   .option('--base-url <url>', 'provider base URL, e.g. http://127.0.0.1:11434')
   .option('--key-env <name>', 'environment variable holding the API key')
+  .option('--bind <folder>', 'apply ```file:path blocks from agent output inside this folder (undoable)')
   .action(async (goalParts, options) => {
     const { createProvider } = require('../core/agents/providers');
     const { runGoal } = require('../core/agents/commander');
+    const runs = require('../core/research/runs');
+    const fileWrites = require('../core/goals/fileWrites');
     const provider = createProvider({
       kind: options.kind,
       baseUrl: options.baseUrl,
@@ -101,7 +104,56 @@ program
       provider,
       onEvent: (e) => console.error(JSON.stringify(e)),
     });
-    console.log(JSON.stringify(out, null, 2));
+    const run = runs.saveRun({ goal: goalParts.join(' '), ...out });
+    let undoId = null;
+    if (options.bind) {
+      const writes = Object.values(out.results).flatMap(fileWrites.parseFileBlocks);
+      if (writes.length) undoId = fileWrites.applyWrites(options.bind, writes);
+    }
+    console.log(JSON.stringify({ runId: run.id, undoId, ...out }, null, 2));
+  });
+
+program
+  .command('undo <id>')
+  .description('undo a goal run\'s file writes')
+  .action((id) => {
+    require('../core/goals/fileWrites').undo(id);
+    console.log(JSON.stringify({ undone: id }));
+  });
+
+const runsCmd = program.command('runs').description('run history with provenance');
+runsCmd.command('list').option('-q, --query <text>').option('--all', 'include archived')
+  .action((o) => console.log(JSON.stringify(require('../core/research/runs').listRuns({ query: o.query, includeArchived: o.all }), null, 2)));
+runsCmd.command('export <id>')
+  .action((id) => console.log(require('../core/research/runs').exportMarkdown(id)));
+runsCmd.command('verify <id>')
+  .action((id) => console.log(JSON.stringify(require('../core/research/runs').verifyRun(id), null, 2)));
+runsCmd.command('archive <id>')
+  .action((id) => require('../core/research/runs').setArchived(id, true));
+
+program
+  .command('edit <file> <newTextFile>')
+  .description('propose an edit as reviewable hunks; --accept applies chosen hunk indexes')
+  .option('--accept <indexes>', 'comma-separated hunk indexes to apply, or "all"')
+  .action((file, newTextFile, o) => {
+    const fs = require('fs');
+    const { proposeEdit, applyPatch } = require('../core/office/patches');
+    const patch = proposeEdit(file, fs.readFileSync(newTextFile, 'utf8'));
+    if (!o.accept) return console.log(JSON.stringify(patch.hunks, null, 2));
+    const idx = o.accept === 'all' ? patch.hunks.map((h) => h.index) : o.accept.split(',').map(Number);
+    applyPatch(patch, idx);
+    console.log(JSON.stringify({ applied: idx }));
+  });
+
+const marketCmd = program.command('market').description('skill marketplace');
+marketCmd.command('list <registryUrl>')
+  .action(async (url) => console.log(JSON.stringify(await require('../core/marketplace/registry').fetchRegistry(url), null, 2)));
+marketCmd.command('install <registryUrl> <name>')
+  .action(async (url, name) => {
+    const m = require('../core/marketplace/registry');
+    const entry = (await m.fetchRegistry(url)).find((s) => s.name === name);
+    if (!entry) throw new Error(`no skill "${name}" in registry`);
+    console.log(JSON.stringify(await m.installSkill(entry, skills)));
   });
 
 program.parseAsync(process.argv);

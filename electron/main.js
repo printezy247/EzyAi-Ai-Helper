@@ -33,6 +33,27 @@ ipcMain.handle('ssh:transfer', (_e, host, localPath, remotePath, direction, opts
   ssh.transferFile(host, localPath, remotePath, direction, opts)
 );
 
+// --- Goals / run history IPC ----------------------------------------------
+const { createProvider } = require('../core/agents/providers');
+const { runGoal } = require('../core/agents/commander');
+const runs = require('../core/research/runs');
+const fileWrites = require('../core/goals/fileWrites');
+
+ipcMain.handle('goals:run', async (_e, goal, cfg, bindFolder) => {
+  const provider = createProvider(cfg);
+  const out = await runGoal(goal, { provider });
+  const run = runs.saveRun({ goal, ...out });
+  let undoId = null;
+  if (bindFolder) {
+    const writes = Object.values(out.results).flatMap(fileWrites.parseFileBlocks);
+    if (writes.length) undoId = fileWrites.applyWrites(bindFolder, writes);
+  }
+  return { runId: run.id, undoId, ...out };
+});
+ipcMain.handle('goals:undo', (_e, id) => fileWrites.undo(id));
+ipcMain.handle('runs:list', (_e, query) => runs.listRuns({ query }));
+ipcMain.handle('runs:export', (_e, id) => runs.exportMarkdown(id));
+
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
